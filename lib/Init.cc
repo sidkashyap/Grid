@@ -38,6 +38,10 @@ int GridThread::_threads;
 
 const std::vector<int> &GridDefaultLatt(void)     {return Grid_default_latt;};
 const std::vector<int> &GridDefaultMpi(void)      {return Grid_default_mpi;};
+
+
+
+
 const std::vector<int> GridDefaultSimd(int dims,int nsimd)
 {
     std::vector<int> layout(dims);
@@ -102,7 +106,8 @@ void GridCmdOptionCSL(std::string str,std::vector<std::string> & vec)
 
 /**
  *
- * clean up the string arg to remove punctuation if any
+ * Initialize the vector vec to the option specified by the user and override the defaults
+ * the vector is usually specified with dots 4.4.4.4 etc, hence, remove the punctuation
  *
  * Input: arg, mpi/latt
  */
@@ -126,6 +131,8 @@ void GridCmdOptionIntVector(std::string &str,std::vector<int> & vec)
  *
  */
 
+//`./benchmarks/Grid_wilson --grid $vol --omp $omp  | grep mflop | awk '{print $3}'` echo $vol $perf >> wilson.t$omp
+
 void GridParseLayout(char **argv,int argc,
 		     std::vector<int> &latt,
 		     std::vector<int> &mpi)
@@ -145,12 +152,15 @@ void GridParseLayout(char **argv,int argc,
 
     GridCmdOptionIntVector(arg,mpi);
   }
+
+  //initialize the lattice vector to
   if( GridCmdOptionExists(argv,argv+argc,"--grid") ){
     arg= GridCmdOptionPayload(argv,argv+argc,"--grid");
     GridCmdOptionIntVector(arg,latt);
   }
 
   //if the commandline option is --omp, it should specify the number of threads only. parse the argument to find the number of threads and set the number of threads to be the same
+
   if( GridCmdOptionExists(argv,argv+argc,"--omp") ){
     std::vector<int> ompthreads(0);
     arg= GridCmdOptionPayload(argv,argv+argc,"--omp");
@@ -179,6 +189,13 @@ std::string GridCmdVectorIntToString(const std::vector<int> & vec){
  *
  * Inputs: command line arguments
  * outputs: void, but initializes several static and allocated variables across classes
+ *
+ * Invocation Example:
+ *
+ * omp in 1,2,4
+ * vol in 4.4.4.4 4.4.4.8 4.4.8.8  4.8.8.8  8.8.8.8   8.8.8.16 8.8.16.16  8.16.16.16
+ * ./benchmarks/Grid_wilson --grid $vol --omp $omp  | grep mflop | awk '{print $3}'`
+ *
  */
 
 void Grid_init(int *argc,char ***argv)
@@ -229,9 +246,11 @@ void Grid_init(int *argc,char ***argv)
   }
 
 
+  //set the variables latt and mpi
   GridParseLayout(*argv,*argc,
 		  Grid_default_latt,
 		  Grid_default_mpi);
+
 
 
     if( GridCmdOptionExists(*argv,*argv+*argc,"--decomposition") ){

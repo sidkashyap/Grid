@@ -17,6 +17,10 @@ namespace Optimization {
 
   template<class vtype>
   union uconv {
+	  /**
+	   * The __m256 data type is used to represent the contents of the extended SSE register - the YMM register, used by the Intel® AVX intrinsics.
+	   * The __m256 data type can hold eight 32-bit floating-point values.
+	   */
     __m256 f;
     vtype v;
   };
