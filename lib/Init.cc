@@ -29,6 +29,8 @@ namespace Grid {
 // Convenience functions to access stadard command line arg
 // driven parallelism controls
 //////////////////////////////////////////////////////
+
+
 static std::vector<int> Grid_default_latt;
 static std::vector<int> Grid_default_mpi;
 int GridThread::_threads;
@@ -55,9 +57,21 @@ const std::vector<int> GridDefaultSimd(int dims,int nsimd)
 ////////////////////////////////////////////////////////////
 // Command line parsing assist for stock controls
 ////////////////////////////////////////////////////////////
+
+
+/**
+ * returns the command line argument string which matches the string option.
+ * returns null if there is no match
+ *
+ * Input:argv,argv+argc,"--mpi"/"--omp"/"--Grid" (based on the command line option
+ * output: string payload or null string
+ */
+
 std::string GridCmdOptionPayload(char ** begin, char ** end, const std::string & option)
 {
+  //Returns an iterator to the first element in the range [first,last) that compares equal to val. If no such element is found, return last
   char ** itr = std::find(begin, end, option);
+
   if (itr != end && ++itr != end) {
     std::string payload(*itr);
     return payload;
@@ -86,6 +100,13 @@ void GridCmdOptionCSL(std::string str,std::vector<std::string> & vec)
   return;
 }
 
+/**
+ *
+ * clean up the string arg to remove punctuation if any
+ *
+ * Input: arg, mpi/latt
+ */
+
 void GridCmdOptionIntVector(std::string &str,std::vector<int> & vec)
 {
   vec.resize(0);
@@ -98,7 +119,12 @@ void GridCmdOptionIntVector(std::string &str,std::vector<int> & vec)
   }    
   return;
 }
-
+/**
+ * Initializes the static vectors mpi and latt (declared in this namespace)
+ * Input: Command line arguments and refernces to the vectors lattice and mpi
+ * Output: Void, initializes several variables
+ *
+ */
 
 void GridParseLayout(char **argv,int argc,
 		     std::vector<int> &latt,
@@ -107,17 +133,24 @@ void GridParseLayout(char **argv,int argc,
   mpi =std::vector<int>({1,1,1,1});
   latt=std::vector<int>({8,8,8,8});
 
+
+  //set the static variable _threads defined in Threads.h to OMP_NUM_THREADS if openmp if not set _threads to 1
   GridThread::SetMaxThreads();
 
   std::string arg;
+
   if( GridCmdOptionExists(argv,argv+argc,"--mpi") ){
+	//sets the string arg to the command line option that contains the string --mpi, if not returns null
     arg = GridCmdOptionPayload(argv,argv+argc,"--mpi");
+
     GridCmdOptionIntVector(arg,mpi);
   }
   if( GridCmdOptionExists(argv,argv+argc,"--grid") ){
     arg= GridCmdOptionPayload(argv,argv+argc,"--grid");
     GridCmdOptionIntVector(arg,latt);
   }
+
+  //if the commandline option is --omp, it should specify the number of threads only. parse the argument to find the number of threads and set the number of threads to be the same
   if( GridCmdOptionExists(argv,argv+argc,"--omp") ){
     std::vector<int> ompthreads(0);
     arg= GridCmdOptionPayload(argv,argv+argc,"--omp");
@@ -133,9 +166,21 @@ std::string GridCmdVectorIntToString(const std::vector<int> & vec){
   std::copy(vec.begin(), vec.end(),std::ostream_iterator<int>(oss, " "));
   return oss.str();
 }
-/////////////////////////////////////////////////////////
-//
-/////////////////////////////////////////////////////////
+
+/**
+ * Initializes the requisite variables by parsing the command line arguments
+ * Summary:
+ *
+ * Init MPI if the communication method chosen is MPI
+ *
+ * 1) Parse the command line arguments
+ * 1.1) enable debug signals if asked
+ * 1.2) choose the dslash and lebesque implementation as needed
+ *
+ * Inputs: command line arguments
+ * outputs: void, but initializes several static and allocated variables across classes
+ */
+
 void Grid_init(int *argc,char ***argv)
 {
 #ifdef GRID_COMMS_MPI
@@ -182,10 +227,14 @@ void Grid_init(int *argc,char ***argv)
   if( GridCmdOptionExists(*argv,*argv+*argc,"--lebesgue") ){
     LebesgueOrder::UseLebesgueOrder=1;
   }
+
+
   GridParseLayout(*argv,*argc,
 		  Grid_default_latt,
 		  Grid_default_mpi);
-  if( GridCmdOptionExists(*argv,*argv+*argc,"--decomposition") ){
+
+
+    if( GridCmdOptionExists(*argv,*argv+*argc,"--decomposition") ){
     std::cout<<GridLogMessage<<"Grid Decomposition\n";
     std::cout<<GridLogMessage<<"\tOpenMP threads : "<<GridThread::GetThreads()<<std::endl;
     std::cout<<GridLogMessage<<"\tMPI tasks      : "<<GridCmdVectorIntToString(GridDefaultMpi())<<std::endl;
