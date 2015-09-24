@@ -15,7 +15,8 @@ WilsonFermion5D<Impl>::WilsonFermion5D(GaugeField &_Umu,
 				       GridRedBlackCartesian &FiveDimRedBlackGrid,
 				       GridCartesian         &FourDimGrid,
 				       GridRedBlackCartesian &FourDimRedBlackGrid,
-				       RealD _M5) :
+				       RealD _M5,const ImplParams &p) :
+  Kernels(p),
   _FiveDimGrid(&FiveDimGrid),
   _FiveDimRedBlackGrid(&FiveDimRedBlackGrid),
   _FourDimGrid(&FourDimGrid),
@@ -105,11 +106,11 @@ PARALLEL_FOR_LOOP
 
 template<class Impl>
 void WilsonFermion5D<Impl>::DerivInternal(CartesianStencil & st,
-				    DoubledGaugeField & U,
-				    GaugeField &mat,
-				    const FermionField &A,
-				    const FermionField &B,
-				    int dag)
+					  DoubledGaugeField & U,
+					  GaugeField &mat,
+					  const FermionField &A,
+					  const FermionField &B,
+					  int dag)
 {
   assert((dag==DaggerNo) ||(dag==DaggerYes));
 
@@ -118,7 +119,6 @@ void WilsonFermion5D<Impl>::DerivInternal(CartesianStencil & st,
 
   Compressor compressor(dag);
   
-  GaugeLinkField tmp(mat._grid);
   FermionField Btilde(B._grid);
   FermionField Atilde(B._grid);
 
@@ -137,7 +137,6 @@ void WilsonFermion5D<Impl>::DerivInternal(CartesianStencil & st,
     ////////////////////////
     // Call the single hop
     ////////////////////////
-    tmp = zero;
 
 PARALLEL_FOR_LOOP
     for(int sss=0;sss<U._grid->oSites();sss++){
@@ -154,14 +153,11 @@ PARALLEL_FOR_LOOP
     // spin trace outer product
     ////////////////////////////
 
-	tmp[sU] = tmp[sU]+ traceIndex<SpinIndex>(
-		   outerProduct(Btilde[sF],Atilde[sF])); // ordering here
-
       }
 
     }
 
-    PokeIndex<LorentzIndex>(mat,tmp,mu);
+    Impl::InsertForce5D(mat,Btilde,Atilde,mu);
 
   }
 }

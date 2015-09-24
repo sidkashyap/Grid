@@ -11,8 +11,7 @@ namespace Grid {
     class OverlapWilsonContFracZolotarevFermion : public ContinuedFractionFermion5D<Impl>
     {
     public:
-#include <qcd/action/fermion/FermionImplTypedefs.h>
-    public:
+     INHERIT_IMPL_TYPES(Impl);
 
       virtual void   Instantiatable(void){};
       // Constructors
@@ -22,14 +21,14 @@ namespace Grid {
 					  GridCartesian         &FourDimGrid,
 					  GridRedBlackCartesian &FourDimRedBlackGrid,
 					  RealD _mass,RealD _M5,
-					  RealD lo,RealD hi):
+					  RealD lo,RealD hi,const ImplParams &p= ImplParams()):
       
       // b+c=scale, b-c = 0 <=> b =c = scale/2
       ContinuedFractionFermion5D<Impl>(_Umu,
-				 FiveDimGrid,
-				 FiveDimRedBlackGrid,
-				 FourDimGrid,
-				 FourDimRedBlackGrid,_mass,_M5)
+				       FiveDimGrid,
+				       FiveDimRedBlackGrid,
+				       FourDimGrid,
+				       FourDimRedBlackGrid,_mass,_M5,p)
 	{
 	  assert((this->Ls&0x1)==1); // Odd Ls required
 

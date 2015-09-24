@@ -11,25 +11,24 @@ namespace Grid {
     class OverlapWilsonPartialFractionZolotarevFermion : public PartialFractionFermion5D<Impl>
     {
     public:
-#include <qcd/action/fermion/FermionImplTypedefs.h>
-    public:
+     INHERIT_IMPL_TYPES(Impl);
 
       virtual void   Instantiatable(void){};
       // Constructors
     OverlapWilsonPartialFractionZolotarevFermion(GaugeField &_Umu,
-					  GridCartesian         &FiveDimGrid,
-					  GridRedBlackCartesian &FiveDimRedBlackGrid,
-					  GridCartesian         &FourDimGrid,
-					  GridRedBlackCartesian &FourDimRedBlackGrid,
-					  RealD _mass,RealD _M5,
-					  RealD lo,RealD hi):
+						 GridCartesian         &FiveDimGrid,
+						 GridRedBlackCartesian &FiveDimRedBlackGrid,
+						 GridCartesian         &FourDimGrid,
+						 GridRedBlackCartesian &FourDimRedBlackGrid,
+						 RealD _mass,RealD _M5,
+						 RealD lo,RealD hi,const ImplParams &p= ImplParams()):
       
       // b+c=scale, b-c = 0 <=> b =c = scale/2
       PartialFractionFermion5D<Impl>(_Umu,
 				     FiveDimGrid,
 				     FiveDimRedBlackGrid,
 				     FourDimGrid,
-				     FourDimRedBlackGrid,_mass,_M5)
+				     FourDimRedBlackGrid,_mass,_M5,p)
 	{
 	  assert((this->Ls&0x1)==1); // Odd Ls required
 

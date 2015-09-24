@@ -11,8 +11,7 @@ namespace Grid {
     class ScaledShamirFermion : public MobiusFermion<Impl>
     {
     public:
-#include <qcd/action/fermion/FermionImplTypedefs.h>
-    public:
+     INHERIT_IMPL_TYPES(Impl);
 
       // Constructors
     ScaledShamirFermion(GaugeField &_Umu,

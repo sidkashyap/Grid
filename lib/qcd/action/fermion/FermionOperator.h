@@ -6,168 +6,18 @@ namespace Grid {
   namespace QCD {
 
     ////////////////////////////////////////////////////////////////
-    // Hardwire to four spinors, allow to select 
-    // between gauge representation rank, and gparity/flavour index,
+    // Allow to select  between gauge representation rank bc's, flavours etc.
     // and single/double precision.
     ////////////////////////////////////////////////////////////////
-
-    template<class S,int Nrepresentation=Nc>
-    class WilsonImpl { 
-    public:
-
-      typedef S Simd;
-
-      template<typename vtype> using iImplSpinor             = iScalar<iVector<iVector<vtype, Nrepresentation>, Ns> >;
-      template<typename vtype> using iImplHalfSpinor         = iScalar<iVector<iVector<vtype, Nrepresentation>, Nhs> >;
-
-      template<typename vtype> using iImplGaugeLink          = iScalar<iScalar<iMatrix<vtype, Nrepresentation> > >;
-      template<typename vtype> using iImplGaugeField         = iVector<iScalar<iMatrix<vtype, Nrepresentation> >, Nd  >;
-      template<typename vtype> using iImplDoubledGaugeField  = iVector<iScalar<iMatrix<vtype, Nrepresentation> >, Nds >;
     
-      typedef iImplSpinor    <Simd>           SiteSpinor;
-      typedef iImplHalfSpinor<Simd>           SiteHalfSpinor;
-      typedef iImplGaugeLink <Simd>           SiteGaugeLink;
-      typedef iImplGaugeField<Simd>           SiteGaugeField;
-      typedef iImplDoubledGaugeField<Simd>    SiteDoubledGaugeField;
-
-      typedef Lattice<SiteSpinor>                 FermionField;
-      typedef Lattice<SiteGaugeLink>            GaugeLinkField; // bit ugly naming; polarised gauge field, lorentz... all ugly
-      typedef Lattice<SiteGaugeField>               GaugeField;
-      typedef Lattice<SiteDoubledGaugeField> DoubledGaugeField;
-
-      typedef WilsonCompressor<SiteHalfSpinor,SiteSpinor> Compressor;
-
-      // provide the multiply by link that is differentiated between Gparity (with flavour index) and 
-      // non-Gparity
-      static inline void multLink(SiteHalfSpinor &phi,const SiteDoubledGaugeField &U,const SiteHalfSpinor &chi,int mu){
-        mult(&phi(),&U(mu),&chi());
-      }
-
-      static inline void DoubleStore(GridBase *GaugeGrid,DoubledGaugeField &Uds,const GaugeField &Umu)
-      {
-        conformable(Uds._grid,GaugeGrid);
-        conformable(Umu._grid,GaugeGrid);
-        GaugeLinkField U(GaugeGrid);
-        for(int mu=0;mu<Nd;mu++){
-  	  U = PeekIndex<LorentzIndex>(Umu,mu);
-	  PokeIndex<LorentzIndex>(Uds,U,mu);
-	  U = adj(Cshift(U,mu,-1));
-	  PokeIndex<LorentzIndex>(Uds,U,mu+4);
-	}
-      }
-
-    };
-
-    typedef WilsonImpl<vComplex,Nc>  WilsonImplR; // Real.. whichever prec
-    typedef WilsonImpl<vComplexF,Nc> WilsonImplF; // Float
-    typedef WilsonImpl<vComplexD,Nc> WilsonImplD; // Double
-
-
-
-    template<class S,int Nrepresentation=Nc>
-    class GparityWilsonImpl { 
-    public:
-
-      typedef S Simd;
-
-      template<typename vtype> using iImplSpinor             = iVector<iVector<iVector<vtype, Nrepresentation>, Ns>, Ngp >;
-      template<typename vtype> using iImplHalfSpinor         = iVector<iVector<iVector<vtype, Nrepresentation>, Nhs>, Ngp >;
-      template<typename vtype> using iImplGaugeField         = iVector<iScalar<iMatrix<vtype, Nrepresentation> >, Nd  >;
-
-      template<typename vtype> using iImplGaugeLink          = iScalar<iScalar<iScalar<iMatrix<vtype, Nrepresentation> > > >;
-      template<typename vtype> using iImplDoubledGaugeField  = iVector<iVector<iScalar<iMatrix<vtype, Nrepresentation> >, Nds >, Ngp >;
-    
-      typedef iImplSpinor    <Simd>           SiteSpinor;
-      typedef iImplHalfSpinor<Simd>           SiteHalfSpinor;
-      typedef iImplGaugeLink <Simd>           SiteGaugeLink;
-      typedef iImplGaugeField<Simd>           SiteGaugeField;
-      typedef iImplDoubledGaugeField<Simd>    SiteDoubledGaugeField;
-
-      typedef Lattice<SiteSpinor>                 FermionField;
-      typedef Lattice<SiteGaugeLink>            GaugeLinkField; // bit ugly naming; polarised gauge field, lorentz... all ugly
-      typedef Lattice<SiteGaugeField>               GaugeField;
-      typedef Lattice<SiteDoubledGaugeField> DoubledGaugeField;
-
-      typedef GparityWilsonCompressor<SiteHalfSpinor,SiteSpinor> Compressor;
-
-      // provide the multiply by link that is differentiated between Gparity (with flavour index) and 
-      // non-Gparity
-      static inline void multLink(SiteHalfSpinor &phi,const SiteDoubledGaugeField &U,const SiteHalfSpinor &chi,int mu){
-	for(int f=0;f<Ngp;f++){
-	  mult(&phi(f),&U(f)(mu),&chi(f));
-	}
-      }
-
-      static inline void DoubleStore(GridBase *GaugeGrid,DoubledGaugeField &Uds,const GaugeField &Umu)
-      {
-        conformable(Uds._grid,GaugeGrid);
-        conformable(Umu._grid,GaugeGrid);
-
-        GaugeLinkField Utmp(GaugeGrid);
-        GaugeLinkField U(GaugeGrid);
-        GaugeLinkField Uconj(GaugeGrid);
-
-	Lattice<iScalar<vInteger> > coor(GaugeGrid);
-	
-	std::vector<int> gpdirs({1,0,0,0});
-
-        for(int mu=0;mu<Nd;mu++){
-
-	  LatticeCoordinate(coor,mu);
-
-  	  U     = PeekIndex<LorentzIndex>(Umu,mu);
-	  Uconj = conj(U);
-
-	  int neglink = GaugeGrid->GlobalDimensions()[mu]-1;
-
-	  if ( gpdirs[mu] ) { 
-	    Uconj = where(coor==neglink,-Uconj,Uconj);
-	  }
-PARALLEL_FOR_LOOP
-	  for(auto ss=U.begin();ss<U.end();ss++){
-	    Uds[ss](0)(mu) = U[ss]();
-	    Uds[ss](1)(mu) = Uconj[ss]();
-	  }
-
-
-	  U     = adj(Cshift(U,mu,-1));      // correct except for spanning the boundary
-	  Uconj = adj(Cshift(Uconj,mu,-1));
-
-	  Utmp = where(coor==0,U,Uconj);
-PARALLEL_FOR_LOOP
-	  for(auto ss=U.begin();ss<U.end();ss++){
-	    Uds[ss](1)(mu) = Utmp[ss]();
-	  }
-
-	  Utmp = where(coor==0,Uconj,U);
-PARALLEL_FOR_LOOP
-	  for(auto ss=U.begin();ss<U.end();ss++){
-	    Uds[ss](0)(mu) = Utmp[ss]();
-	  }
-
-
-	}
-      }
-
-    };
-
-    typedef WilsonImpl<vComplex,Nc>  WilsonImplR; // Real.. whichever prec
-    typedef WilsonImpl<vComplexF,Nc> WilsonImplF; // Float
-    typedef WilsonImpl<vComplexD,Nc> WilsonImplD; // Double
-
-
-    
-    //////////////////////////////////////////////////////////////////////////////
-    // Four component fermions
-    // Should type template the vector and gauge types
-    // Think about multiple representations
-    //////////////////////////////////////////////////////////////////////////////
     template<class Impl>
-    class FermionOperator : public CheckerBoardedSparseMatrixBase<typename Impl::FermionField>
+    class FermionOperator : public CheckerBoardedSparseMatrixBase<typename Impl::FermionField>, public Impl
     {
     public:
-#include <qcd/action/fermion/FermionImplTypedefs.h>
-    public:
+
+      INHERIT_IMPL_TYPES(Impl);
+
+      FermionOperator(const ImplParams &p= ImplParams()) : Impl(p) {};
 
       GridBase * Grid(void)   { return FermionGrid(); };   // this is all the linalg routines need to know
       GridBase * RedBlackGrid(void) { return FermionRedBlackGrid(); };
@@ -182,6 +32,8 @@ PARALLEL_FOR_LOOP
       virtual RealD  Mdag (const FermionField &in, FermionField &out)=0;
 
       // half checkerboard operaions
+      virtual int    ConstEE(void) { return 1; }; // clover returns zero as EE depends on gauge field
+
       virtual void   Meooe       (const FermionField &in, FermionField &out)=0;
       virtual void   MeooeDag    (const FermionField &in, FermionField &out)=0;
       virtual void   Mooee       (const FermionField &in, FermionField &out)=0;
@@ -199,7 +51,7 @@ PARALLEL_FOR_LOOP
       virtual void MDeriv  (GaugeField &mat,const FermionField &U,const FermionField &V,int dag){DhopDeriv(mat,U,V,dag);};
       virtual void MoeDeriv(GaugeField &mat,const FermionField &U,const FermionField &V,int dag){DhopDerivOE(mat,U,V,dag);};
       virtual void MeoDeriv(GaugeField &mat,const FermionField &U,const FermionField &V,int dag){DhopDerivEO(mat,U,V,dag);};
-      virtual void MooDeriv(GaugeField &mat,const FermionField &U,const FermionField &V,int dag){mat=zero;};
+      virtual void MooDeriv(GaugeField &mat,const FermionField &U,const FermionField &V,int dag){mat=zero;}; // Clover can override these
       virtual void MeeDeriv(GaugeField &mat,const FermionField &U,const FermionField &V,int dag){mat=zero;};
 
       virtual void DhopDeriv  (GaugeField &mat,const FermionField &U,const FermionField &V,int dag)=0;

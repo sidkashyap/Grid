@@ -4,93 +4,6 @@
 namespace Grid{
   namespace QCD{
 
-    template<class Impl>
-    class SchurDifferentiableOperator :  public SchurDiagMooeeOperator<FermionOperator<Impl>,typename Impl::FermionField> 
-      {
-      public:
-#include <qcd/action/fermion/FermionImplTypedefs.h>
-	
-    public:
-	typedef FermionOperator<Impl> Matrix;
-
-	SchurDifferentiableOperator (Matrix &Mat) : SchurDiagMooeeOperator<Matrix,FermionField>(Mat) {};
-
-	void MpcDeriv(GaugeField &Force,const FermionField &U,const FermionField &V) {
-	
-	  GridBase *fgrid   = this->_Mat.FermionGrid();
-	  GridBase *fcbgrid = this->_Mat.FermionRedBlackGrid();
-	  GridBase *ugrid = this->_Mat.GaugeGrid();
-	  GridBase *ucbgrid = this->_Mat.GaugeRedBlackGrid();
-
-	  Real coeff = 1.0;
-	  FermionField tmp1(fcbgrid);
-	  FermionField tmp2(fcbgrid);
-
-	  conformable(fcbgrid,U._grid);
-	  conformable(fcbgrid,V._grid);
-
-	  // Assert the checkerboard?? or code for either
-	  assert(U.checkerboard==Odd);
-	  assert(V.checkerboard==V.checkerboard);
-
-	  GaugeField ForceO(ucbgrid);
-	  GaugeField ForceE(ucbgrid);
-
-	  //  X^dag Der_oe MeeInv Meo Y
-	  // Use Mooee as nontrivial but gauge field indept
-	  this->_Mat.Meooe   (V,tmp1);      // odd->even -- implicit -0.5 factor to be applied
-	  this->_Mat.MooeeInv(tmp1,tmp2);   // even->even 
-	  this->_Mat.MoeDeriv(ForceO,U,tmp2,DaggerNo);
-	  
-	  //  Accumulate X^dag M_oe MeeInv Der_eo Y
-	  this->_Mat.MeooeDag   (U,tmp1);    // even->odd -- implicit -0.5 factor to be applied
-	  this->_Mat.MooeeInvDag(tmp1,tmp2); // even->even 
-	  this->_Mat.MeoDeriv(ForceE,tmp2,V,DaggerNo);
-	  
-	  setCheckerboard(Force,ForceE); 
-	  setCheckerboard(Force,ForceO);
-	  Force=-Force;
-	}
-
-
-	void MpcDagDeriv(GaugeField &Force,const FermionField &U,const FermionField &V) {
-	
-	  GridBase *fgrid   = this->_Mat.FermionGrid();
-	  GridBase *fcbgrid = this->_Mat.FermionRedBlackGrid();
-	  GridBase *ugrid   = this->_Mat.GaugeGrid();
-	  GridBase *ucbgrid = this->_Mat.GaugeRedBlackGrid();
-
-	  Real coeff = 1.0;
-	  FermionField tmp1(fcbgrid);
-	  FermionField tmp2(fcbgrid);
-
-	  conformable(fcbgrid,U._grid);
-	  conformable(fcbgrid,V._grid);
-
-	  // Assert the checkerboard?? or code for either
-	  assert(V.checkerboard==Odd);
-	  assert(V.checkerboard==V.checkerboard);
-
-	  GaugeField ForceO(ucbgrid);
-	  GaugeField ForceE(ucbgrid);
-
-	  //  X^dag Der_oe MeeInv Meo Y
-	  // Use Mooee as nontrivial but gauge field indept
-	  this->_Mat.MeooeDag   (V,tmp1);      // odd->even -- implicit -0.5 factor to be applied
-	  this->_Mat.MooeeInvDag(tmp1,tmp2);   // even->even 
-	  this->_Mat.MoeDeriv(ForceO,U,tmp2,DaggerYes);
-	  
-	  //  Accumulate X^dag M_oe MeeInv Der_eo Y
-	  this->_Mat.Meooe   (U,tmp1);    // even->odd -- implicit -0.5 factor to be applied
-	  this->_Mat.MooeeInv(tmp1,tmp2); // even->even 
-	  this->_Mat.MeoDeriv(ForceE,tmp2,V,DaggerYes);
-
-	  setCheckerboard(Force,ForceE); 
-	  setCheckerboard(Force,ForceO);
-	  Force=-Force;
-	}
-
-    };
 
 
     ////////////////////////////////////////////////////////////////////////
@@ -100,14 +13,14 @@ namespace Grid{
     class TwoFlavourEvenOddPseudoFermionAction : public Action<typename Impl::GaugeField> {
 
     public:
-#include <qcd/action/fermion/FermionImplTypedefs.h>
+
+      INHERIT_IMPL_TYPES(Impl);
 
     private:
       
       FermionOperator<Impl> & FermOp;// the basic operator
 
       OperatorFunction<FermionField> &DerivativeSolver;
-
       OperatorFunction<FermionField> &ActionSolver;
 
       FermionField PhiOdd;   // the pseudo fermion field for this trajectory
@@ -131,13 +44,14 @@ namespace Grid{
       //////////////////////////////////////////////////////////////////////////////////////
       // Push the gauge field in to the dops. Assume any BC's and smearing already applied
       //////////////////////////////////////////////////////////////////////////////////////
-      virtual void init(const GaugeField &U, GridParallelRNG& pRNG) {
+      virtual void refresh(const GaugeField &U, GridParallelRNG& pRNG) {
 
 	// P(phi) = e^{- phi^dag (MpcdagMpc)^-1 phi}
 	// Phi = McpDag eta 
 	// P(eta) = e^{- eta^dag eta}
 	//
 	// e^{x^2/2 sig^2} => sig^2 = 0.5.
+
 	RealD scale = std::sqrt(0.5);
 
 	FermionField eta    (FermOp.FermionGrid());
@@ -148,11 +62,12 @@ namespace Grid{
 	pickCheckerboard(Even,etaEven,eta);
 	pickCheckerboard(Odd,etaOdd,eta);
 
+	FermOp.ImportGauge(U);
 	SchurDifferentiableOperator<Impl> PCop(FermOp);
 	
-	FermOp.ImportGauge(U);
 
 	PCop.MpcDag(etaOdd,PhiOdd);
+
 	FermOp.MooeeDag(etaEven,PhiEven);
 
 	PhiOdd =PhiOdd*scale;
@@ -203,24 +118,32 @@ namespace Grid{
 	FermionField Y(FermOp.FermionRedBlackGrid());
 	GaugeField tmp(FermOp.GaugeGrid());
 
-	SchurDifferentiableOperator<Impl> PCop(FermOp);
-
-	X=zero;
-	DerivativeSolver(PCop,PhiOdd,X);
-	PCop.Op(X,Y);
+	SchurDifferentiableOperator<Impl> Mpc(FermOp);
 
 	// Our conventions really make this UdSdU; We do not differentiate wrt Udag here.
 	// So must take dSdU - adj(dSdU) and left multiply by mom to get dS/dt.
 
-  	PCop.MpcDeriv(tmp , Y, X );    dSdU=tmp;
-	PCop.MpcDagDeriv(tmp , X, Y);  dSdU=dSdU+tmp;
+	X=zero;
+	DerivativeSolver(Mpc,PhiOdd,X);
+	Mpc.Mpc(X,Y);
+  	Mpc.MpcDeriv(tmp , Y, X );    dSdU=tmp;
+	Mpc.MpcDagDeriv(tmp , X, Y);  dSdU=dSdU+tmp;
 
 	// Treat the EE case. (MdagM)^-1 = Minv Minvdag
 	// Deriv defaults to zero.
+	//        FermOp.MooeeInvDag(PhiOdd,Y);
+	//      FermOp.MooeeInv(Y,X);
+	//	FermOp.MeeDeriv(tmp , Y, X,DaggerNo );    dSdU=tmp;
+	//  FermOp.MeeDeriv(tmp , X, Y,DaggerYes);  dSdU=dSdU+tmp;
+
+	assert(FermOp.ConstEE() == 1);
+
+	/*
         FermOp.MooeeInvDag(PhiOdd,Y);
         FermOp.MooeeInv(Y,X);
   	FermOp.MeeDeriv(tmp , Y, X,DaggerNo );    dSdU=tmp;
 	FermOp.MeeDeriv(tmp , X, Y,DaggerYes);  dSdU=dSdU+tmp;
+	*/
 	
 	dSdU = Ta(dSdU);
 
