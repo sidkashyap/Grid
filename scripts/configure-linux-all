@@ -1,0 +1,11 @@
+#!/bin/bash
+
+DIRS="clang-avx clang-avx-openmp clang-avx-openmp-mpi clang-avx-mpi clang-avx2 clang-avx2-openmp clang-avx2-openmp-mpi clang-avx2-mpi icpc-avx icpc-avx2 icpc-avx512 g++-avx-openmp g++5-sse4  g++5-avx  g++-avx clang-sse icpc-avx-openmp-mpi icpc-avx-openmp"
+
+for D in $DIRS
+do
+  mkdir -p builds/$D
+  cd builds/$D
+  ../../scripts/configure-linux-commands $D
+  cd ../..
+done
