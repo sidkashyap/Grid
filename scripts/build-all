@@ -1,6 +1,6 @@
 #!/bin/bash  -e
 
-DIRS="clang-avx-openmp"
+DIRS="clang-avx"
 EXTRADIRS="clang-avx g++-avx g++-sse4 icpc-avx icpc-avx2 icpc-avx512 clang-avx-openmp-mpi clang-avx-mpi clang-avx2 clang-avx2-openmp clang-avx2-openmp-mpi clang-avx2-mpi clang-sse"
 BLACK="\033[30m"
 RED="\033[31m"

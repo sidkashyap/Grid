@@ -7,6 +7,7 @@
 
 
 #include <arpa/inet.h>
+#include<algorithm>
 
 // 64bit endian swap is a portability pain
 #ifndef __has_builtin         // Optional of course.
