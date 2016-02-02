@@ -104,6 +104,8 @@ void GridCmdOptionCSL(std::string str,std::vector<std::string> & vec)
   return;
 }
 
+
+
 /**
  *
  * Initialize the vector vec to the option specified by the user and override the defaults

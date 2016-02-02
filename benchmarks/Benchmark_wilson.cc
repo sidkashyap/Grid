@@ -20,10 +20,20 @@ int main (int argc, char ** argv)
 {
   Grid_init(&argc,&argv);
 
+  std::cout<<GridLogMessage << "Sid: Om Namah Shivaya"<<std::endl;
 
   std::vector<int> latt_size   = GridDefaultLatt();
+
+  std::cout<<GridLogMessage << "Sid: lattice size"<< latt_size.size() <<std::endl;
+
   std::vector<int> simd_layout = GridDefaultSimd(Nd,vComplex::Nsimd());
+
+  std::cout<<GridLogMessage << "Sid: SIMD layout"<< simd_layout.size() <<std::endl;
+
   std::vector<int> mpi_layout  = GridDefaultMpi();
+
+  std::cout<<GridLogMessage << "Sid: Default MPI"<< mpi_layout.size() <<std::endl;
+
   GridCartesian               Grid(latt_size,simd_layout,mpi_layout);
   GridRedBlackCartesian     RBGrid(latt_size,simd_layout,mpi_layout);
 
@@ -51,6 +61,10 @@ int main (int argc, char ** argv)
     volume=volume*latt_size[mu];
   }  
 
+  std::cout<<GridLogMessage << "Sid: Volume"<< volume <<std::endl;
+
+
+
   // Only one non-zero (y)
 #if 0
   Umu=zero;
@@ -70,6 +84,7 @@ int main (int argc, char ** argv)
   }
   
   { // Naive wilson implementation
+	  std::cout<<GridLogMessage << "Sid: CShift Begin" <<std::endl;
     ref = zero;
     for(int mu=0;mu<Nd;mu++){
       //    ref =  src + Gamma(Gamma::GammaX)* src ; // 1-gamma_x
@@ -84,9 +99,11 @@ int main (int argc, char ** argv)
 	ref._odata[i]+= tmp._odata[i] - Gamma(Gmu[mu])*tmp._odata[i]; ;
       }
     }
+    std::cout<<GridLogMessage << "Sid: CShift End" <<std::endl;
   }
   ref = -0.5*ref;
   RealD mass=0.1;
+
   WilsonFermionR Dw(Umu,Grid,RBGrid,mass);
   
   std::cout<<GridLogMessage << "Calling Dw"<<std::endl;
@@ -98,6 +115,8 @@ int main (int argc, char ** argv)
   double t1=usecond();
   double flops=1344*volume*ncall;
   
+  std::cout<<GridLogMessage << "Sid: t1"<< t1<<std::endl;
+  std::cout<<GridLogMessage << "Sid: t0"<< t0 <<std::endl;
   std::cout<<GridLogMessage << "Called Dw"<<std::endl;
   std::cout<<GridLogMessage << "norm result "<< norm2(result)<<std::endl;
   std::cout<<GridLogMessage << "norm ref    "<< norm2(ref)<<std::endl;

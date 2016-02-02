@@ -1,7 +1,7 @@
 #!/bin/bash  -e
 
-DIRS="clang-avx clang-avx-openmp clang-avx-openmp-mpi clang-avx-mpi clang-avx2 clang-avx2-openmp clang-avx2-openmp-mpi clang-avx2-mpi clang-sse"
-EXTRADIRS="g++-avx g++-sse4 icpc-avx icpc-avx2 icpc-avx512"
+DIRS="clang-avx-openmp"
+EXTRADIRS="clang-avx g++-avx g++-sse4 icpc-avx icpc-avx2 icpc-avx512 clang-avx-openmp-mpi clang-avx-mpi clang-avx2 clang-avx2-openmp clang-avx2-openmp-mpi clang-avx2-mpi clang-sse"
 BLACK="\033[30m"
 RED="\033[31m"
 GREEN="\033[32m"
@@ -39,7 +39,7 @@ echo -e $RED ==============================
 echo -e $BLUE
 
   cd builds/$D
-  make clean all -j 8
+  make all -j 8
   cd ../../
 echo -e $NORMAL
 done

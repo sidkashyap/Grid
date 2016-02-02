@@ -29,21 +29,21 @@
 /* #undef HAVE_ALTIVEC */
 
 /* Support AVX (Advanced Vector Extensions) instructions */
-#define HAVE_AVX /**/
+/* #undef HAVE_AVX */
 
 /* Support AVX2 (Advanced Vector Extensions 2) instructions */
 /* #undef HAVE_AVX2 */
 
 /* Define to 1 if you have the declaration of `be64toh', and to 0 if you
    don't. */
-#define HAVE_DECL_BE64TOH 1
+#define HAVE_DECL_BE64TOH 0
 
 /* Define to 1 if you have the declaration of `ntohll', and to 0 if you don't.
    */
-#define HAVE_DECL_NTOHLL 0
+#define HAVE_DECL_NTOHLL 1
 
 /* Define to 1 if you have the <endian.h> header file. */
-#define HAVE_ENDIAN_H 1
+/* #undef HAVE_ENDIAN_H */
 
 /* Support FMA3 (Fused Multiply-Add) instructions */
 /* #undef HAVE_FMA */
@@ -58,37 +58,37 @@
 #define HAVE_INTTYPES_H 1
 
 /* Define to 1 if you have the <malloc.h> header file. */
-#define HAVE_MALLOC_H 1
+/* #undef HAVE_MALLOC_H */
 
 /* Define to 1 if you have the <malloc/malloc.h> header file. */
-/* #undef HAVE_MALLOC_MALLOC_H */
+#define HAVE_MALLOC_MALLOC_H 1
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
 
 /* Support mmx instructions */
-#define HAVE_MMX /**/
+/* #undef HAVE_MMX */
 
 /* Define to 1 if you have the <mm_malloc.h> header file. */
 #define HAVE_MM_MALLOC_H 1
 
 /* Support SSE (Streaming SIMD Extensions) instructions */
-#define HAVE_SSE /**/
+/* #undef HAVE_SSE */
 
 /* Support SSE2 (Streaming SIMD Extensions 2) instructions */
-#define HAVE_SSE2 /**/
+/* #undef HAVE_SSE2 */
 
 /* Support SSE3 (Streaming SIMD Extensions 3) instructions */
-#define HAVE_SSE3 /**/
+/* #undef HAVE_SSE3 */
 
 /* Support SSSE4.1 (Streaming SIMD Extensions 4.1) instructions */
-#define HAVE_SSE4_1 /**/
+/* #undef HAVE_SSE4_1 */
 
 /* Support SSSE4.2 (Streaming SIMD Extensions 4.2) instructions */
-#define HAVE_SSE4_2 /**/
+/* #undef HAVE_SSE4_2 */
 
 /* Support SSSE3 (Supplemental Streaming SIMD Extensions 3) instructions */
-#define HAVE_SSSE3 /**/
+/* #undef HAVE_SSSE3 */
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #define HAVE_STDINT_H 1
