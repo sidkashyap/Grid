@@ -37,6 +37,7 @@ public:
     stencil.HaloExchange(*Pnow,comm_buf,compressor);
 
     // Iterate over all grid sites
+    PARALLEL_FOR_LOOP
     for(int i=0; i<Pnow->_grid->oSites(); i++)
     {
       // Laplacian
@@ -66,6 +67,7 @@ public:
     V04atbeta0 = 4.0 * V0 * pow( pow(ct_prev,expoentec), beta0 );
 
     // Iterate over all grid sites
+    PARALLEL_FOR_LOOP
     for(int i=0; i<Pnow->_grid->oSites(); i++)
     {
       // Laplacian
@@ -203,7 +205,6 @@ int main (int argc, char ** argv)
 
     // Initialise scalar fields
     random(pRNG,P1);
-    P1 = Grid::zero;
     P2 = Grid::zero;
     Pold = NULL;
     Pnow = &P1;
