@@ -19,7 +19,11 @@ public:
     omega0(0.5 * W0 * ctinitial),
     V0(0.5 * M_PI * M_PI / ( omega0 * omega0)),
     idct(1.0 / dct),
-    qmiu(0.0)
+    qmiu(0.0),
+    vdx2r(dx2r),
+    vdct(dct),
+    vidct(idct),
+    vqmiu(qmiu)
 
   {
     // Resize communication buffer
@@ -43,6 +47,10 @@ public:
     m1delta    = 1.0 - delta;
     V04atbeta0 = 4.0 * V0 * pow( pow(ct_prev,expoentec), beta0 );
 
+    vScalar vm1delta    = m1delta;
+    vScalar vV04atbeta0 = V04atbeta0;
+    vScalar vi1pdelta   = i1pdelta;
+
     // Iterate over all grid sites
     PARALLEL_FOR_LOOP
     for(int i=0; i<Pnow->_grid->oSites(); i++)
@@ -50,11 +58,11 @@ public:
       // Laplacian
       vScalar Lphi = Laplacian(i);
       // Current time derivative
-      vScalar DPnow_ijkl = (Pnow->_odata[i] - Pold->_odata[i]) * idct;
+      vScalar DPnow_ijkl = (Pnow->_odata[i] - Pold->_odata[i]) * vidct;
       // New time derivative
-      vScalar DPnew_ijkl = (m1delta * DPnow_ijkl + dct * (Lphi - V04atbeta0 * ((Pnow->_odata[i]*(Pnow->_odata[i]*Pnow->_odata[i]-1.0)) + qmiu))) * i1pdelta;
+      vScalar DPnew_ijkl = (vm1delta * DPnow_ijkl + vdct * (Lphi - vV04atbeta0 * ((Pnow->_odata[i]*(Pnow->_odata[i]*Pnow->_odata[i]-1.0)) + vqmiu))) * vi1pdelta;
       // Dynamical evolution of P
-      Pnew->_odata[i] = Pnow->_odata[i] + dct * DPnew_ijkl;
+      Pnew->_odata[i] = Pnow->_odata[i] + vdct * DPnew_ijkl;
     }
 
     // Halo exchange
@@ -105,11 +113,19 @@ private:
   const Grid::Real qmiu;
   Grid::Real i1pdelta;
 
+  const vScalar vdct;
+  const vScalar vidct;
+  vScalar vm1delta;
+  vScalar vV04atbeta0;
+  const vScalar vqmiu;
+  vScalar vi1pdelta;
+  const vScalar vdx2r;
+
   vScalarField const * Pold;
   vScalarField const * Pnow;
   vScalarField *       Pnew;
 
-  vScalar Laplacian(int i)
+  inline vScalar Laplacian(int i)
   {
     // Variables used by stencil
     Grid::StencilEntry *SE;
@@ -137,7 +153,7 @@ private:
 
     // Complete Laplacian
     Lphi -= 6.0 * Pnow->_odata[i];
-    return Lphi * dx2r;
+    return Lphi * vdx2r;
   }
 };
 
@@ -189,8 +205,8 @@ int main (int argc, char ** argv)
   double bytes = vol * sizeof(Grid::Real) * 2 * Nloop;
   double flops = double(vol) * double(22) * double(Nloop);
   std::cout << Grid::GridLogMessage << std::setprecision(5)
-            << "GB/s: "   << 1.0E-9 * bytes / time << "\t"
-            << "Flop/s: " << 1.0E-9 * flops / time << std::endl;
+            << "GB/s: "    << 1.0E-9 * bytes / time << "\t"
+            << "GFlop/s: " << 1.0E-9 * flops / time << std::endl;
 
   // Finalize
   Grid::Grid_finalize();
